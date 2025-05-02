@@ -1,0 +1,190 @@
+---
+title: "Final Project"
+author: "Kayla Urgiles-Lojano"
+format: html
+editor: visual
+---
+
+Read data in:
+
+```{r}
+library(tidyverse)
+
+```
+
+```{r}
+library(readr)
+student_performance_large_dataset <- read_csv("data/student_performance_large_dataset.csv")
+```
+
+# Questions
+
+1)  How does the number of study hours per week relate to students’ final exam scores?
+
+2)  Do students who use educational technology perform better on exams compared to those who do not?
+
+3)  Do students with different preferred learning styles (Visual, Auditory, Reading/Writing, Kinesthetic) have different final grades?
+
+# Histogram
+
+Distribution of one numeric variable: plot a histogram of one numeric variable
+
+```{r fig.width= 10, fig.height= 6}
+student_performance_large_dataset |>
+  ggplot(aes(x = Study_Hours_per_Week)) +
+  geom_histogram(bins = 40) 
+
+```
+
+\`\`\`
+
+# Box Plot
+
+```{r fig.width= 10, fig.height= 6}
+student_performance_large_dataset |>
+  ggplot(aes(y= Preferred_Learning_Style,
+             x= Study_Hours_per_Week)) +
+  geom_boxplot() +
+  labs(title = "Study Hours per Week vs Preferred Learning Style",
+       x = "Study Hours per Week",
+       y = "Preferred Learning Style") 
+```
+
+# Scatterplot
+
+```{r fig.width= 10, fig.height= 6}
+student_performance_large_dataset |>
+  ggplot(aes(x= Study_Hours_per_Week,
+             y= `Exam_Score (%)` )) +
+  geom_point()  +
+  labs(title = "Study Hours vs Exam Score",
+       x = "Study Hours per Week",
+       y = "Exam Score") 
+
+
+```
+
+# Mean
+
+```{r}
+library(glue)
+
+stats <- student_performance_large_dataset |>
+  summarize(
+    mean_hours = mean(Study_Hours_per_Week, na.rm = TRUE),
+    median_hours = median(Study_Hours_per_Week, na.rm = TRUE)
+  )
+
+glue("📚 Study Time Summary 📚 \n Mean: {round(stats$mean_hours, 1)} hours/week\n Median: {round(stats$median_hours, 1)} hours/week")
+```
+
+# Standard Deviation
+
+```{r}
+library(glue)
+
+stats <- student_performance_large_dataset |>
+  summarize(sd_exam = sd(`Exam_Score (%)`, na.rm = TRUE))
+
+glue("📝Standard Deviation of Exam Scores: {round(stats$sd_exam, 2)} points ")
+```
+
+# Min and Max
+
+```{r}
+library(dplyr)
+library(glue)
+
+stats <- student_performance_large_dataset |>
+  group_by(Preferred_Learning_Style) |>
+  summarize(
+    min_score = min(`Exam_Score (%)`, na.rm = TRUE),
+    max_score = max(`Exam_Score (%)`, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+for (i in 1:nrow(stats)) {
+  message(glue(" ✨  {stats$Preferred_Learning_Style[i]} learners scored between {stats$min_score[i]}% and {stats$max_score[i]}% \n"))
+}
+```
+
+# <u>Inferential Statistics</u>
+
+
+# Two Sample T-Test
+
+
+```{r}
+library(glue)
+
+t.test(`Exam_Score (%)` ~ Use_of_Educational_Tech, 
+                        data = student_performance_large_dataset)
+
+
+```
+
+# Anova
+
+```{r}
+library(dplyr)
+library(glue)
+
+anova <- aov(`Exam_Score (%)` ~ factor(Preferred_Learning_Style), data = student_performance_large_dataset)
+
+anova_summary <- summary(anova)
+
+f_value <- anova_summary[[1]]$`F value`[1]
+p_value <- anova_summary[[1]]$`Pr(>F)`[1]
+
+glue("
+ANOVA Results: Exam Scores by Learning Style
+✨  F-value: {round(f_value, 2)}
+✨  p-value: {signif(p_value, 3)}
+{if (p_value < 0.05) '🌟 Statistically significant difference found!' else '🫥 No significant difference between learning styles.'}
+")
+
+```
+
+# Correlation
+
+```{r}
+
+cor.test(student_performance_large_dataset$Study_Hours_per_Week,
+         student_performance_large_dataset$`Exam_Score (%)`)
+
+
+```
+
+# Linear Regression
+
+```{r}
+exam_by_study_hours <- lm(`Exam_Score (%)` ~ Study_Hours_per_Week,
+                          data = student_performance_large_dataset)
+
+summary(exam_by_study_hours)
+
+```
+Results:
+
+Across all analyses—T-test, ANOVA, correlation, and regression—there is no significant evidence that study hours, learning style, or use of educational technology meaningfully affect exam performance in this dataset. This suggests that other factors (not included here) might better explain differences in scores.
+
+
+# Conclusion
+
+I started my analysis of the student performance dataset by looking at how much time students spent studying each week. The average was 27.1 hours, and the median was 27 hours, which means most students studied about the same amount. I also looked at how much exam scores varied and found a standard deviation of about 17.65 points, showing a moderate difference in how students performed. Then, I grouped students by their preferred learning style—Auditory, Kinesthetic, Reading/Writing, and Visual—and checked the highest and lowest exam scores for each group. All groups had scores ranging from 40% to 100%, meaning that learning style didn’t clearly affect how well students did on exams.
+
+To understand what might influence exam scores, I ran a few statistical tests. First, I compared scores between students who used educational technology and those who didn’t, and there was no significant difference (p = 0.5803). I also tested if learning style affected scores using a one-way ANOVA, but again, there was no significant result (p = 0.946). However, when I looked at study hours and exam scores, I found a moderate positive correlation (r ≈ 0.28, p < 0.001), meaning students who studied more generally scored higher. A simple linear regression confirmed that study time is a significant, though not strong, predictor of exam performance. Overall, study hours seemed to matter most in predicting exam results.
+
+# Questions Answered 
+
+1. How does the number of study hours per week relate to students’ final exam scores? 
+
+There is a moderate positive relationship between study hours and exam scores. This means that students who study more each week tend to get higher exam scores. The connection isn’t very strong, but it is statistically significant.
+
+2. Do students who use educational technology perform better on exams compared to those who do not? 
+
+No, students who used educational technology did not score higher on exams than those who didn’t. The difference was not statistically significant.
+
+3. Do students with different preferred learning styles (Visual, Auditory, Reading/Writing, Kinesthetic) have different final grades? 
+
+No, students with different learning styles did not have significantly different exam scores. Learning style didn’t seem to affect performance.
